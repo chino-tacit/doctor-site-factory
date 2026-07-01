@@ -1,0 +1,76 @@
+name: Deploy Doctor Sites to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      site:
+        description: 'Specific site to deploy (empty = all)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: List sites to deploy
+        id: sites
+        run: |
+          if [ -n "${{ github.event.inputs.site }}" ]; then
+            echo "sites=${{ github.event.inputs.site }}" >> $GITHUB_OUTPUT
+          else
+            # Find all generated sites
+            sites=$(ls sites/ 2>/dev/null | tr '\n' ' ' | sed 's/ $//')
+            echo "sites=$sites" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deploy each site
+        if: steps.sites.outputs.sites != ''
+        run: |
+          for site in ${{ steps.sites.outputs.sites }}; do
+            echo "🚀 Deploying $site..."
+            cd sites/$site
+
+            # Install and build
+            npm ci
+            npm run build
+
+            # Deploy to gh-pages branch
+            # Option 1: Separate branch per site
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+
+            # Create orphan branch for this site
+            git checkout --orphan "site-$site"
+            git rm -rf .
+            cp -r dist/* .
+
+            # Add CNAME if exists
+            if [ -f CNAME ]; then
+              echo "Custom domain: $(cat CNAME)"
+            fi
+
+            git add .
+            git commit -m "Deploy $site to GitHub Pages"
+            git push -f origin "site-$site"
+
+            # Switch back
+            git checkout main
+            cd ../..
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

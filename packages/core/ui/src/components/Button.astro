@@ -1,0 +1,49 @@
+---
+interface Props {
+  children: string;
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+  size?: 'default' | 'sm' | 'lg' | 'icon';
+  class?: string;
+  type?: 'button' | 'submit' | 'reset';
+  disabled?: boolean;
+  onClick?: () => void;
+}
+
+const { children, variant = 'default', size = 'default', class: className, type = 'button', disabled = false, onClick } = Astro.props;
+
+const baseStyles = 'inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50';
+
+const variants = {
+  default: 'bg-primary text-primary-foreground hover:bg-primary/90',
+  destructive: 'bg-red-500 text-white hover:bg-red-500/90',
+  outline: 'border border-gray-300 bg-transparent hover:bg-gray-100',
+  secondary: 'bg-gray-100 text-gray-900 hover:bg-gray-200',
+  ghost: 'hover:bg-gray-100 hover:text-gray-900',
+  link: 'text-primary underline-offset-4 hover:underline',
+};
+
+const sizes = {
+  default: 'h-10 px-4 py-2',
+  sm: 'h-9 rounded-md px-3',
+  lg: 'h-11 rounded-lg px-8',
+  icon: 'h-10 w-10',
+};
+
+const variantClass = variants[variant];
+const sizeClass = sizes[size];
+
+const classes = `${baseStyles} ${variantClass} ${sizeClass} ${className || ''}`;
+---
+
+<button
+  type={type}
+  disabled={disabled}
+  class={classes}
+  {onClick && `onclick=${onClick}`}
+>
+  <slot>{children}</slot>
+</button>
+
+<style is:global>
+  .font-body { font-family: var(--font-body, 'Inter', sans-serif); }
+</style>

@@ -1,0 +1,25 @@
+---
+interface Props {
+  children: string;
+  class?: string;
+  variant?: 'default' | 'outlined' | 'elevated';
+}
+
+const { children, class: className, variant = 'default' } = Astro.props;
+
+const variants = {
+  default: 'bg-white border border-gray-200 shadow-sm',
+  outlined: 'bg-white border border-gray-300',
+  elevated: 'bg-white shadow-lg border border-gray-100',
+};
+
+const classes = `rounded-xl ${variants[variant]} ${className || ''}`;
+---
+
+<div class={classes}>
+  <slot>{children}</slot>
+</div>
+
+<style is:global>
+  .font-body { font-family: var(--font-body, 'Inter', sans-serif); }
+</style>

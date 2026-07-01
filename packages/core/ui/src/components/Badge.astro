@@ -1,0 +1,22 @@
+---
+interface Props {
+  children: string;
+  variant?: 'default' | 'secondary' | 'destructive' | 'outline';
+  class?: string;
+}
+
+const { children, variant = 'default', class: className } = Astro.props;
+
+const variants = {
+  default: 'bg-primary/10 text-primary',
+  secondary: 'bg-gray-100 text-gray-700',
+  destructive: 'bg-red-50 text-red-600',
+  outline: 'border border-gray-300 bg-transparent text-gray-700',
+};
+
+const classes = `inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${variants[variant]} ${className || ''}`;
+---
+
+<span class={classes}>
+  <slot>{children}</slot>
+</span>

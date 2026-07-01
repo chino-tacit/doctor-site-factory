@@ -1,0 +1,25 @@
+{
+  "name": "@doctor-site-factory/cli",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "bin": {
+    "create-clinic-site": "./src/index.ts"
+  },
+  "scripts": {
+    "check": "tsc --noEmit",
+    "create-site": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@doctor-site-factory/core-tokens": "file:../core/tokens",
+    "commander": "^12.1.0",
+    "fs-extra": "^11.2.0"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0"
+  }
+}

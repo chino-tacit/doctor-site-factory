@@ -1,0 +1,25 @@
+{
+  "name": "doctor-site-factory",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "dev": "npm run dev --workspace=packages/astro-doctor-template",
+    "create-site": "npm run create-site --workspace=packages/cli --",
+    "lint": "eslint . --ext .ts,.tsx,.astro",
+    "format": "prettier --write \"**/*.{ts,tsx,astro,json,md}\""
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "eslint": "^9.0.0",
+    "prettier": "^3.3.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

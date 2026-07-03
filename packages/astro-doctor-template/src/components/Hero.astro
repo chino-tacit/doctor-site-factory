@@ -9,8 +9,10 @@ interface Props {
 }
 
 const { headline, subheadline, ctaText, ctaLink, backgroundImage, themeColor = '#2E8B57' } = Astro.props;
+// Use BASE_URL for correct asset paths with base config
+const baseUrl = import.meta.env.BASE_URL || '/';
 const style = backgroundImage
-  ? `background-image: url('${backgroundImage}');`
+  ? `background-image: url('${baseUrl}${backgroundImage.replace(/^\//, '')}');`
   : `background-color: ${themeColor};`;
 ---
 

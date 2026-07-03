@@ -154,8 +154,8 @@ jobs:
           npm run build
         working-directory: sites/${{ github.event.inputs.site-name }}
 
-      - name: Deploy to GitHub Pages
-        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+      - name: Deploy to GitHub Pages (with custom domain)
+        if: github.event.inputs.custom-domain != ''
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -163,3 +163,12 @@ jobs:
           publish_branch: site-${{ github.event.inputs.site-name }}
           force_orphan: true
           cname: ${{ github.event.inputs.custom-domain }}
+
+      - name: Deploy to GitHub Pages (no custom domain)
+        if: github.event.inputs.custom-domain == ''
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./sites/${{ github.event.inputs.site-name }}/dist
+          publish_branch: site-${{ github.event.inputs.site-name }}
+          force_orphan: true

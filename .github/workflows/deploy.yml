@@ -47,13 +47,9 @@ jobs:
           echo "=== Packages ==="
           ls -la packages/
 
-      - name: Generate site
-        env:
-          SPECIALTY: ${{ github.event.inputs.specialty }}
-          SITE_NAME: ${{ github.event.inputs.site-name }}
-          CUSTOM_DOMAIN: ${{ github.event.inputs.custom-domain }}
+      - name: Create generate script
         run: |
-          node -e "
+          cat > generate-site.js << 'EOF'
           const fs = require('fs');
           const path = require('path');
           
@@ -63,7 +59,7 @@ jobs:
           
           const workspaceRoot = process.cwd();
           const specialtyDir = path.join(workspaceRoot, 'specialties', specialty);
-          const templateDir = path.join(workspaceRoot, 'packages', 'packages', 'astro-doctor-template');
+          const templateDir = path.join(workspaceRoot, 'packages', 'astro-doctor-template');
           const outputDir = path.join(workspaceRoot, 'sites', name);
           
           console.log('DEBUG: workspaceRoot =', workspaceRoot);
@@ -111,9 +107,9 @@ jobs:
           const basePath = domain ? '/' : '/' + name + '/';
           
           // Update site and add base
-          configContent = configContent.replace(\"site: 'https://example.com'\", \"site: '\" + siteUrl + \"'\");
+          configContent = configContent.replace("site: 'https://example.com'", "site: '" + siteUrl + "'");
           if (!configContent.includes('base:')) {
-            configContent = configContent.replace(\"site: '\", \"base: '\" + basePath + \"',\\n  site: '\");
+            configContent = configContent.replace("site: '", "base: '" + basePath + "',\n  site: '");
           }
           
           fs.writeFileSync(configPath, configContent);
@@ -127,7 +123,15 @@ jobs:
           
           console.log('');
           console.log('🎉 Site created at', outputDir);
-          "
+          EOF
+        working-directory: .
+
+      - name: Generate site
+        env:
+          SPECIALTY: ${{ github.event.inputs.specialty }}
+          SITE_NAME: ${{ github.event.inputs.site-name }}
+          CUSTOM_DOMAIN: ${{ github.event.inputs.custom-domain }}
+        run: node generate-site.js
         working-directory: .
 
       - name: Verify site generated

@@ -22,7 +22,7 @@ on:
         default: ''
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -156,9 +156,29 @@ jobs:
 
       - name: Deploy to GitHub Pages
         if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
-        uses: JamesIves/github-pages-deploy-action@v4
-        with:
-          branch: site-${{ github.event.inputs.site-name }}
-          folder: sites/${{ github.event.inputs.site-name }}/dist
-          clean: true
-          single-commit: true
+        run: |
+          cd sites/${{ github.event.inputs.site-name }}
+          
+          # Create temp directory for deploy branch
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Use git worktree for clean deploy
+          git worktree add -B site-${{ github.event.inputs.site-name }} ../.deploy origin/main 2>/dev/null || git worktree add -B site-${{ github.event.inputs.site-name }} ../.deploy
+          
+          # Clear and copy
+          rm -rf ../.deploy/*
+          cp -r dist/* ../.deploy/
+          
+          # Add CNAME if exists
+          if [ -f ../.deploy/CNAME ]; then
+            echo "Custom domain: $(cat ../.deploy/CNAME)"
+          fi
+          
+          # Commit and push
+          cd ../.deploy
+          git add .
+          git commit -m "Deploy ${{ github.event.inputs.site-name }} to GitHub Pages"
+          git push -f origin site-${{ github.event.inputs.site-name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

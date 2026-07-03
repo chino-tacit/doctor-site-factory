@@ -38,15 +38,15 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Generate site (Node.js inline)
+      - name: Create generate script
         run: |
-          node -e "
+          cat > generate-site.js << 'ENDSCRIPT'
           const fs = require('fs');
           const path = require('path');
           
-          const specialty = '${{ github.event.inputs.specialty }}';
-          const name = '${{ github.event.inputs.site-name }}';
-          const domain = '${{ github.event.inputs.custom-domain }}';
+          const specialty = process.env.SPECIALTY;
+          const name = process.env.SITE_NAME;
+          const domain = process.env.CUSTOM_DOMAIN;
           
           const workspaceRoot = process.cwd();
           const specialtyDir = path.join(workspaceRoot, 'specialties', specialty);
@@ -57,11 +57,16 @@ jobs:
           console.log('DEBUG: specialtyDir =', specialtyDir);
           console.log('DEBUG: templateDir =', templateDir);
           console.log('DEBUG: outputDir =', outputDir);
+          console.log('DEBUG: specialty =', specialty);
+          console.log('DEBUG: name =', name);
+          console.log('DEBUG: domain =', domain);
           
           // Check directories exist
           if (!fs.existsSync(specialtyDir)) {
             console.error('Specialty dir not found:', specialtyDir);
-            fs.readdirSync(path.join(workspaceRoot, 'specialties')).forEach(f => console.log('  Available:', f));
+            if (fs.existsSync(path.join(workspaceRoot, 'specialties'))) {
+              fs.readdirSync(path.join(workspaceRoot, 'specialties')).forEach(f => console.log('  Available:', f));
+            }
             process.exit(1);
           }
           if (!fs.existsSync(templateDir)) {
@@ -88,7 +93,7 @@ jobs:
           const configPath = path.join(outputDir, 'astro.config.mjs');
           let configContent = fs.readFileSync(configPath, 'utf8');
           const siteUrl = domain ? 'https://' + domain : 'https://' + name + '.github.io';
-          configContent = configContent.replace(\"site: 'https://example.com'\", \"site: '\" + siteUrl + \"'\");
+          configContent = configContent.replace("site: 'https://example.com'", "site: '" + siteUrl + "'");
           fs.writeFileSync(configPath, configContent);
           
           if (domain) {
@@ -99,7 +104,16 @@ jobs:
           console.log('✅ Astro config updated with site:', siteUrl);
           console.log('');
           console.log('🎉 Site created at', outputDir);
-          "
+          ENDSCRIPT
+        working-directory: .
+
+      - name: Generate site
+        env:
+          SPECIALTY: ${{ github.event.inputs.specialty }}
+          SITE_NAME: ${{ github.event.inputs.site-name }}
+          CUSTOM_DOMAIN: ${{ github.event.inputs.custom-domain }}
+        run: |
+          node generate-site.js
         working-directory: .
 
       - name: Verify site generated

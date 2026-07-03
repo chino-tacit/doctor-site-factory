@@ -38,9 +38,22 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Create generate script
+      - name: Debug - list workspace
         run: |
-          cat > generate-site.js << 'ENDSCRIPT'
+          echo "=== Workspace root ==="
+          ls -la
+          echo "=== Specialties ==="
+          ls -la specialties/
+          echo "=== Packages ==="
+          ls -la packages/
+
+      - name: Generate site
+        env:
+          SPECIALTY: ${{ github.event.inputs.specialty }}
+          SITE_NAME: ${{ github.event.inputs.site-name }}
+          CUSTOM_DOMAIN: ${{ github.event.inputs.custom-domain }}
+        run: |
+          node -e "
           const fs = require('fs');
           const path = require('path');
           
@@ -74,26 +87,28 @@ jobs:
             process.exit(1);
           }
           
-          // Copy template
+          console.log('Copying template...');
           fs.cpSync(templateDir, outputDir, { recursive: true });
           console.log('✅ Template copied');
           
-          // Copy specialty content
+          console.log('Copying specialty content...');
           fs.cpSync(path.join(specialtyDir, 'services'), path.join(outputDir, 'src', 'content', 'services'), { recursive: true });
           fs.cpSync(path.join(specialtyDir, 'team'), path.join(outputDir, 'src', 'content', 'team'), { recursive: true });
-          fs.cpSync(path.join(specialtyDir, 'assets'), path.join(outputDir, 'public', 'assets'), { recursive: true, force: true });
+          if (fs.existsSync(path.join(specialtyDir, 'assets'))) {
+            fs.cpSync(path.join(specialtyDir, 'assets'), path.join(outputDir, 'public', 'assets'), { recursive: true, force: true });
+          }
           console.log('✅ Specialty content copied');
           
-          // Inject config
+          console.log('Injecting config...');
           fs.mkdirSync(path.join(outputDir, 'src', 'content', 'specialtyConfig'), { recursive: true });
           fs.cpSync(path.join(specialtyDir, 'config.json'), path.join(outputDir, 'src', 'content', 'specialtyConfig', 'specialtyConfig.json'));
           console.log('✅ Config copied');
           
-          // Update astro.config.mjs with site URL
+          console.log('Updating astro config...');
           const configPath = path.join(outputDir, 'astro.config.mjs');
           let configContent = fs.readFileSync(configPath, 'utf8');
           const siteUrl = domain ? 'https://' + domain : 'https://' + name + '.github.io';
-          configContent = configContent.replace("site: 'https://example.com'", "site: '" + siteUrl + "'");
+          configContent = configContent.replace(\"site: 'https://example.com'\", \"site: '\" + siteUrl + \"'\");
           fs.writeFileSync(configPath, configContent);
           
           if (domain) {
@@ -104,16 +119,7 @@ jobs:
           console.log('✅ Astro config updated with site:', siteUrl);
           console.log('');
           console.log('🎉 Site created at', outputDir);
-          ENDSCRIPT
-        working-directory: .
-
-      - name: Generate site
-        env:
-          SPECIALTY: ${{ github.event.inputs.specialty }}
-          SITE_NAME: ${{ github.event.inputs.site-name }}
-          CUSTOM_DOMAIN: ${{ github.event.inputs.custom-domain }}
-        run: |
-          node generate-site.js
+          "
         working-directory: .
 
       - name: Verify site generated

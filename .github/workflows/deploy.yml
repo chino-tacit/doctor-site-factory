@@ -43,11 +43,13 @@ jobs:
 
       - name: Generate site
         run: |
-          npx tsx packages/cli/src/index.ts \
+          cd packages/cli
+          npx tsx src/index.ts \
             --specialty=${{ github.event.inputs.specialty }} \
             --name=${{ github.event.inputs.site-name }} \
             ${{ github.event.inputs.custom-domain != '' && format('--domain={0}', github.event.inputs.custom-domain) || '' }} \
             --skip-install
+        working-directory: .
 
       - name: Verify site generated
         run: |

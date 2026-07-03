@@ -15,8 +15,25 @@ SPECIALTY_DIR="$WORKSPACE_ROOT/specialties/$SPECIALTY"
 TEMPLATE_DIR="$WORKSPACE_ROOT/packages/astro-doctor-template"
 OUTPUT_DIR="$WORKSPACE_ROOT/sites/$NAME"
 
+echo "DEBUG: SCRIPT_DIR=$SCRIPT_DIR"
+echo "DEBUG: WORKSPACE_ROOT=$WORKSPACE_ROOT"
+echo "DEBUG: SPECIALTY_DIR=$SPECIALTY_DIR"
+echo "DEBUG: TEMPLATE_DIR=$TEMPLATE_DIR"
+echo "DEBUG: OUTPUT_DIR=$OUTPUT_DIR"
+
+ls -la "$WORKSPACE_ROOT"
+ls -la "$WORKSPACE_ROOT/specialties"
+ls -la "$WORKSPACE_ROOT/packages"
+
 if [ ! -d "$SPECIALTY_DIR" ]; then
     echo "❌ Specialty '$SPECIALTY' not found at $SPECIALTY_DIR"
+    ls -la "$WORKSPACE_ROOT/specialties/"
+    exit 1
+fi
+
+if [ ! -d "$TEMPLATE_DIR" ]; then
+    echo "❌ Template dir not found at $TEMPLATE_DIR"
+    ls -la "$WORKSPACE_ROOT/packages/"
     exit 1
 fi
 

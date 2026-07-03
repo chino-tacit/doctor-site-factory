@@ -131,8 +131,15 @@ jobs:
         run: npm install
         working-directory: sites/${{ github.event.inputs.site-name }}
 
-      - name: Build site
-        run: npm run build
+      - name: Build site (with debug)
+        run: |
+          echo "=== Package.json ==="
+          cat package.json
+          echo ""
+          echo "=== Astro config ==="
+          cat astro.config.mjs
+          echo ""
+          npm run build
         working-directory: sites/${{ github.event.inputs.site-name }}
 
       - name: Deploy to GitHub Pages

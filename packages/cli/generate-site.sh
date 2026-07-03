@@ -32,31 +32,20 @@ cp -r "$SPECIALTY_DIR/team" "$OUTPUT_DIR/src/content/team"
 cp -r "$SPECIALTY_DIR/assets" "$OUTPUT_DIR/public/assets" 2>/dev/null || true
 echo "✅ Specialty content copied"
 
-# Inject config
-CONFIG_PATH="$SPECIALTY_DIR/config.json"
-CONFIG=$(cat "$CONFIG_PATH")
-
-# Update site URL if domain provided
-if [ -n "$DOMAIN" ]; then
-    CONFIG=$(echo "$CONFIG" | jq --arg domain "$DOMAIN" '.site = "https://\($domain)"')
-fi
-
-# Write specialty config to content collection
+# Inject config - just copy the config.json directly
 mkdir -p "$OUTPUT_DIR/src/content/specialtyConfig"
-echo "$CONFIG" | jq . > "$OUTPUT_DIR/src/content/specialtyConfig/specialtyConfig.json"
-echo "✅ Config injected"
+cp "$SPECIALTY_DIR/config.json" "$OUTPUT_DIR/src/content/specialtyConfig/specialtyConfig.json"
 
-# Update astro.config.mjs with site URL
-ASTRO_CONFIG_PATH="$OUTPUT_DIR/astro.config.mjs"
-SITE_URL=$(echo "$CONFIG" | jq -r '.site // "https://\($NAME).github.io"')
-sed -i "s|site: 'https://example.com'|site: '$SITE_URL'|" "$ASTRO_CONFIG_PATH"
-echo "✅ Astro config updated"
-
-# Create CNAME if domain provided
+# Update astro.config.mjs with site URL if domain provided
 if [ -n "$DOMAIN" ]; then
+    sed -i "s|site: 'https://example.com'|site: 'https://$DOMAIN'|" "$OUTPUT_DIR/astro.config.mjs"
     echo "$DOMAIN" > "$OUTPUT_DIR/public/CNAME"
     echo "✅ CNAME created for $DOMAIN"
+else
+    # Update astro.config.mjs with default site URL
+    sed -i "s|site: 'https://example.com'|site: 'https://$NAME.github.io'|" "$OUTPUT_DIR/astro.config.mjs"
 fi
+echo "✅ Config injected"
 
 echo ""
 echo "🎉 Site created at $OUTPUT_DIR"

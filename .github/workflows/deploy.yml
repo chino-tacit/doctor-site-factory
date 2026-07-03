@@ -35,17 +35,15 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install factory dependencies
-        run: npm ci
+      # No npm ci at root - we don't need factory deps to generate site
 
       - name: Generate site
         run: |
-          npm run create-site -- \
+          npx tsx packages/cli/src/index.ts \
             --specialty=${{ github.event.inputs.specialty || 'dermatology' }} \
             --name=${{ github.event.inputs.site-name || 'dr-smith-derm' }} \
             ${{ github.event.inputs.custom-domain && format('--domain={0}', github.event.inputs.custom-domain) }} \
             --skip-install
-        working-directory: .
 
       - name: Verify site generated
         run: |

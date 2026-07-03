@@ -56,13 +56,15 @@ mkdir -p "$OUTPUT_DIR/src/content/specialtyConfig"
 cp "$SPECIALTY_DIR/config.json" "$OUTPUT_DIR/src/content/specialtyConfig/specialtyConfig.json"
 
 # Update astro.config.mjs with site URL if domain provided
+# Use a cross-platform sed approach
 if [ -n "$DOMAIN" ]; then
-    sed -i "s|site: 'https://example.com'|site: 'https://$DOMAIN'|" "$OUTPUT_DIR/astro.config.mjs"
+    # Use a temp file approach for cross-platform sed
+    sed "s|site: 'https://example.com'|site: 'https://$DOMAIN'|" "$OUTPUT_DIR/astro.config.mjs" > "$OUTPUT_DIR/astro.config.mjs.tmp" && mv "$OUTPUT_DIR/astro.config.mjs.tmp" "$OUTPUT_DIR/astro.config.mjs"
     echo "$DOMAIN" > "$OUTPUT_DIR/public/CNAME"
     echo "✅ CNAME created for $DOMAIN"
 else
     # Update astro.config.mjs with default site URL
-    sed -i "s|site: 'https://example.com'|site: 'https://$NAME.github.io'|" "$OUTPUT_DIR/astro.config.mjs"
+    sed "s|site: 'https://example.com'|site: 'https://$NAME.github.io'|" "$OUTPUT_DIR/astro.config.mjs" > "$OUTPUT_DIR/astro.config.mjs.tmp" && mv "$OUTPUT_DIR/astro.config.mjs.tmp" "$OUTPUT_DIR/astro.config.mjs"
 fi
 echo "✅ Config injected"
 

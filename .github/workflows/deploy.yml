@@ -9,14 +9,17 @@ on:
         description: 'Specialty to deploy (e.g., dermatology)'
         required: true
         type: string
+        default: 'dermatology'
       site-name:
         description: 'Site slug (e.g., dr-smith-derm)'
         required: true
         type: string
+        default: 'dr-smith-derm'
       custom-domain:
         description: 'Custom domain (optional)'
         required: false
         type: string
+        default: ''
 
 permissions:
   contents: read
@@ -35,42 +38,40 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      # Install tsx globally so npx tsx works
-      - name: Install tsx
+      - name: Install tsx globally
         run: npm install -g tsx
 
       - name: Generate site
         run: |
           npx tsx packages/cli/src/index.ts \
-            --specialty=${{ github.event.inputs.specialty || 'dermatology' }} \
-            --name=${{ github.event.inputs.site-name || 'dr-smith-derm' }} \
-            ${{ github.event.inputs.custom-domain && format('--domain={0}', github.event.inputs.custom-domain) }} \
+            --specialty=${{ github.event.inputs.specialty }} \
+            --name=${{ github.event.inputs.site-name }} \
+            ${{ github.event.inputs.custom-domain != '' && format('--domain={0}', github.event.inputs.custom-domain) || '' }} \
             --skip-install
 
       - name: Verify site generated
         run: |
           ls -la sites/
-          ls -la sites/${{ github.event.inputs.site-name || 'dr-smith-derm' }}/
+          ls -la sites/${{ github.event.inputs.site-name }}/
 
       - name: Install site dependencies
         run: npm ci
-        working-directory: sites/${{ github.event.inputs.site-name || 'dr-smith-derm' }}
+        working-directory: sites/${{ github.event.inputs.site-name }}
 
       - name: Build site
         run: npm run build
-        working-directory: sites/${{ github.event.inputs.site-name || 'dr-smith-derm' }}
+        working-directory: sites/${{ github.event.inputs.site-name }}
 
       - name: Deploy to GitHub Pages
         if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
         run: |
-          cd sites/${{ github.event.inputs.site-name || 'dr-smith-derm' }}
-          
+          cd sites/${{ github.event.inputs.site-name }}
           
           # Create orphan branch for this site
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          git checkout --orphan "site-${{ github.event.inputs.site-name || 'dr-smith-derm }}"
+          git checkout --orphan "site-${{ github.event.inputs.site-name }}"
           git rm -rf .
           cp -r dist/* .
           
@@ -80,7 +81,7 @@ jobs:
           fi
           
           git add .
-          git commit -m "Deploy ${{ github.event.inputs.site-name || 'dr-smith-derm' }} to GitHub Pages"
-          git push -f origin "site-${{ github.event.inputs.site-name || 'dr-smith-derm' }}"
+          git commit -m "Deploy ${{ github.event.inputs.site-name }} to GitHub Pages"
+          git push -f origin "site-${{ github.event.inputs.site-name }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

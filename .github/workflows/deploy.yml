@@ -63,7 +63,7 @@ jobs:
           
           const workspaceRoot = process.cwd();
           const specialtyDir = path.join(workspaceRoot, 'specialties', specialty);
-          const templateDir = path.join(workspaceRoot, 'packages', 'astro-doctor-template');
+          const templateDir = path.join(workspaceRoot, 'packages', 'packages', 'astro-doctor-template');
           const outputDir = path.join(workspaceRoot, 'sites', name);
           
           console.log('DEBUG: workspaceRoot =', workspaceRoot);
@@ -86,7 +86,8 @@ jobs:
             console.error('Template dir not found:', templateDir);
             process.exit(1);
           }
-           console.log('Copying template...');
+          
+          console.log('Copying template...');
           fs.cpSync(templateDir, outputDir, { recursive: true });
           console.log('✅ Template copied');
           
@@ -103,37 +104,21 @@ jobs:
           fs.cpSync(path.join(specialtyDir, 'config.json'), path.join(outputDir, 'src', 'content', 'specialtyConfig', 'specialtyConfig.json'));
           console.log('✅ Config copied');
           
-          console.log('Writing astro config...');
+          console.log('Updating astro config...');
           const configPath = path.join(outputDir, 'astro.config.mjs');
+          let configContent = fs.readFileSync(configPath, 'utf8');
           const siteUrl = domain ? 'https://' + domain : 'https://' + name + '.github.io';
           const basePath = domain ? '/' : '/' + name + '/';
           
-          const astroConfig = 'import { defineConfig } from \\'astro/config\\';\\n' +
-            'import mdx from \\'@astrojs/mdx\\';\\n' +
-            'import react from \\'@astrojs/react\\';\\n' +
-            'import sitemap from \\'@astrojs/sitemap\\';\\n' +
-            'import tailwind from \\'@astrojs/tailwind\\';\\n\\n' +
-            'export default defineConfig({\\n' +
-            '  site: \\'' + siteUrl + '\\',\\n' +
-            '  base: \\'' + basePath + '\\',\\n' +
-            '  output: \\'static\\',\\n' +
-            '  integrations: [\\n' +
-            '    mdx(),\\n' +
-            '    react(),\\n' +
-            '    sitemap(),\\n' +
-            '    tailwind(),\\n' +
-            '  ],\\n' +
-            '  markdown: {\\n' +
-            '    shikiConfig: { theme: \\'github-light\\' },\\n' +
-            '  },\\n' +
-            '  vite: {\\n' +
-            '    plugins: [],\\n' +
-            '  },\\n' +
-            '});\\n';
+          // Update site and add base
+          configContent = configContent.replace(\"site: 'https://example.com'\", \"site: '\" + siteUrl + \"'\");
+          if (!configContent.includes('base:')) {
+            configContent = configContent.replace(\"site: '\", \"base: '\" + basePath + \"',\\n  site: '\");
+          }
           
-          fs.writeFileSync(configPath, astroConfig);
-          console.log('✅ Astro config written with site:', siteUrl);
-          console.log('✅ Astro config written with base:', basePath);
+          fs.writeFileSync(configPath, configContent);
+          console.log('✅ Astro config updated with site:', siteUrl);
+          console.log('✅ Astro config updated with base:', basePath);
           
           if (domain) {
             fs.writeFileSync(path.join(outputDir, 'public', 'CNAME'), domain);

@@ -165,8 +165,11 @@ jobs:
           
           git checkout --orphan "site-${{ github.event.inputs.site-name }}"
           
-          # Remove all files from the orphan branch (if any exist)
-          git rm -rf . 2>/dev/null || true
+          # For orphan branch, we need to clear everything first
+          # Check if there are any tracked files first
+          if [ -n "$(git ls-files)" ]; then
+            git rm -rf .
+          fi
           
           # Copy dist contents
           cp -r dist/* .

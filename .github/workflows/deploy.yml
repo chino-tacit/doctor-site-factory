@@ -5,8 +5,16 @@ on:
     branches: [main]
   workflow_dispatch:
     inputs:
-      site:
-        description: 'Specific site to deploy (empty = all)'
+      specialty:
+        description: 'Specialty to deploy (e.g., dermatology)'
+        required: true
+        type: string
+      site-name:
+        description: 'Site slug (e.g., dr-smith-derm)'
+        required: true
+        type: string
+      custom-domain:
+        description: 'Custom domain (optional)'
         required: false
         type: string
 
@@ -16,7 +24,7 @@ permissions:
   id-token: write
 
 jobs:
-  build-and-deploy:
+  generate-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,50 +35,63 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: List sites to deploy
-        id: sites
+      - name: Install factory dependencies
+        run: npm ci
+
+      - name: Generate site
         run: |
-          if [ -n "${{ github.event.inputs.site }}" ]; then
-            echo "sites=${{ github.event.inputs.site }}" >> $GITHUB_OUTPUT
-          else
-            # Find all generated sites
-            sites=$(ls sites/ 2>/dev/null | tr '\n' ' ' | sed 's/ $//')
-            echo "sites=$sites" >> $GITHUB_OUTPUT
+          npm run create-site -- \
+            --specialty=${{ github.event.inputs.specialty || 'dermatology' }} \
+            --name=${{ github.event.inputs.site-name || 'dr-smith-derm' }} \
+            ${{ github.event.inputs.custom-domain && format('--domain={0}', github.event.inputs.custom-domain) }} \
+            --skip-install
+        working-directory: .
+
+      - name: Install site dependencies
+        run: npm ci
+        working-directory: sites/${{ github.event.inputs.site-name || 'dr-smith-derm' }}
+
+      - name: Build site
+        run: npm run build
+        working-directory: sites/${{ github.event.inputs.site-name || 'dr-smith-derm' }}
+
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+        run: |
+          cd sites/${{ github.event.inputs.site-name || 'dr-smith-derm' }}
+          
+          # Create orphan branch for this site
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git checkout --orphan "site-${{ github.event.inputs.site-name || 'dr-smith-derm' }}"
+          git rm -rf .
+          cp -r dist/* .
+          
+          # Add CNAME if exists
+          if [ -f CNAME ]; then
+            echo "Custom domain: $(cat CNAME)"
           fi
-
-      - name: Deploy each site
-        if: steps.sites.outputs.sites != ''
-        run: |
-          for site in ${{ steps.sites.outputs.sites }}; do
-            echo "🚀 Deploying $site..."
-            cd sites/$site
-
-            # Install and build
-            npm ci
-            npm run build
-
-            # Deploy to gh-pages branch
-            # Option 1: Separate branch per site
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-
-            # Create orphan branch for this site
-            git checkout --orphan "site-$site"
-            git rm -rf .
-            cp -r dist/* .
-
-            # Add CNAME if exists
-            if [ -f CNAME ]; then
-              echo "Custom domain: $(cat CNAME)"
-            fi
-
-            git add .
-            git commit -m "Deploy $site to GitHub Pages"
-            git push -f origin "site-$site"
-
-            # Switch back
-            git checkout main
-            cd ../..
-          done
+          
+          git add .
+          git commit -m "Deploy ${{ github.event.inputs.site-name || 'dr-smith-derm' }} to GitHub Pages"
+          git push -f origin "site-${{ github.event.inputs.site-name || 'dr-smith-derm' }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy-github-pages:
+    needs: generate-and-deploy
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages-site-${{ github.event.inputs.site-name || 'dr-smith-derm' }}

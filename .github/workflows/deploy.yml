@@ -38,17 +38,16 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install tsx globally
-        run: npm install -g tsx
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Generate site
+      - name: Generate site (bash script)
         run: |
-          cd packages/cli
-          npx tsx src/index.ts \
-            --specialty=${{ github.event.inputs.specialty }} \
-            --name=${{ github.event.inputs.site-name }} \
-            ${{ github.event.inputs.custom-domain != '' && format('--domain={0}', github.event.inputs.custom-domain) || '' }} \
-            --skip-install
+          chmod +x packages/cli/generate-site.sh
+          ./packages/cli/generate-site.sh \
+            "${{ github.event.inputs.specialty }}" \
+            "${{ github.event.inputs.site-name }}" \
+            "${{ github.event.inputs.custom-domain }}"
         working-directory: .
 
       - name: Verify site generated

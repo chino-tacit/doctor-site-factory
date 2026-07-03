@@ -128,7 +128,7 @@ jobs:
           ls -la sites/${{ github.event.inputs.site-name }}/
 
       - name: Install site dependencies
-        run: npm ci
+        run: npm install
         working-directory: sites/${{ github.event.inputs.site-name }}
 
       - name: Build site

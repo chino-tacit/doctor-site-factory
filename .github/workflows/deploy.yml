@@ -163,16 +163,19 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
+          # Create a temporary directory for the dist files
+          TEMP_DIR=$(mktemp -d)
+          cp -r dist/* "$TEMP_DIR/"
+          
+          # Create orphan branch
           git checkout --orphan "site-${{ github.event.inputs.site-name }}"
           
-          # For orphan branch, we need to clear everything first
-          # Check if there are any tracked files first
-          if [ -n "$(git ls-files)" ]; then
-            git rm -rf .
-          fi
+          # Remove all files from working directory (including hidden)
+          git ls-files -z | xargs -0 rm -rf 2>/dev/null || true
+          find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} + 2>/dev/null || true
           
           # Copy dist contents
-          cp -r dist/* .
+          cp -r "$TEMP_DIR"/* .
           
           # Add CNAME if exists
           if [ -f CNAME ]; then
@@ -182,5 +185,8 @@ jobs:
           git add .
           git commit -m "Deploy ${{ github.event.inputs.site-name }} to GitHub Pages"
           git push -f origin "site-${{ github.event.inputs.site-name }}"
+          
+          # Cleanup
+          rm -rf "$TEMP_DIR"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

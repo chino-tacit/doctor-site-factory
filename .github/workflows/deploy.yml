@@ -164,7 +164,11 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
           git checkout --orphan "site-${{ github.event.inputs.site-name }}"
-          git rm -rf .
+          
+          # Remove all files from the orphan branch (if any exist)
+          git rm -rf . 2>/dev/null || true
+          
+          # Copy dist contents
           cp -r dist/* .
           
           # Add CNAME if exists

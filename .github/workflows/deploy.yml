@@ -47,6 +47,11 @@ jobs:
             --skip-install
         working-directory: .
 
+      - name: Verify site generated
+        run: |
+          ls -la sites/
+          ls -la sites/${{ github.event.inputs.site-name || 'dr-smith-derm' }}/
+
       - name: Install site dependencies
         run: npm ci
         working-directory: sites/${{ github.event.inputs.site-name || 'dr-smith-derm' }}
@@ -78,20 +83,3 @@ jobs:
           git push -f origin "site-${{ github.event.inputs.site-name || 'dr-smith-derm' }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  deploy-github-pages:
-    needs: generate-and-deploy
-    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-        with:
-          artifact_name: github-pages-site-${{ github.event.inputs.site-name || 'dr-smith-derm' }}

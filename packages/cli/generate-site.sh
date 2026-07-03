@@ -15,13 +15,10 @@ SPECIALTY_DIR="$WORKSPACE_ROOT/specialties/$SPECIALTY"
 TEMPLATE_DIR="$WORKSPACE_ROOT/packages/astro-doctor-template"
 OUTPUT_DIR="$WORKSPACE_ROOT/sites/$NAME"
 
-echo "DEBUG: SCRIPT_DIR=$SCRIPT_DIR"
 echo "DEBUG: WORKSPACE_ROOT=$WORKSPACE_ROOT"
 echo "DEBUG: SPECIALTY_DIR=$SPECIALTY_DIR"
 echo "DEBUG: TEMPLATE_DIR=$TEMPLATE_DIR"
 echo "DEBUG: OUTPUT_DIR=$OUTPUT_DIR"
-echo "DEBUG: DOMAIN=$DOMAIN"
-echo "DEBUG: NAME=$NAME"
 
 ls -la "$WORKSPACE_ROOT"
 ls -la "$WORKSPACE_ROOT/specialties"
@@ -54,19 +51,27 @@ echo "✅ Specialty content copied"
 # Inject config - just copy the config.json directly
 mkdir -p "$OUTPUT_DIR/src/content/specialtyConfig"
 cp "$SPECIALTY_DIR/config.json" "$OUTPUT_DIR/src/content/specialtyConfig/specialtyConfig.json"
+echo "✅ Config copied"
 
-# Update astro.config.mjs with site URL if domain provided
-# Use a cross-platform sed approach
+# Update astro.config.mjs with site URL using node (cross-platform)
 if [ -n "$DOMAIN" ]; then
-    # Use a temp file approach for cross-platform sed
-    sed "s|site: 'https://example.com'|site: 'https://$DOMAIN'|" "$OUTPUT_DIR/astro.config.mjs" > "$OUTPUT_DIR/astro.config.mjs.tmp" && mv "$OUTPUT_DIR/astro.config.mjs.tmp" "$OUTPUT_DIR/astro.config.mjs"
+    SITE_URL="https://$DOMAIN"
     echo "$DOMAIN" > "$OUTPUT_DIR/public/CNAME"
     echo "✅ CNAME created for $DOMAIN"
 else
-    # Update astro.config.mjs with default site URL
-    sed "s|site: 'https://example.com'|site: 'https://$NAME.github.io'|" "$OUTPUT_DIR/astro.config.mjs" > "$OUTPUT_DIR/astro.config.mjs.tmp" && mv "$OUTPUT_DIR/astro.config.mjs.tmp" "$OUTPUT_DIR/astro.config.mjs"
+    SITE_URL="https://$NAME.github.io"
 fi
-echo "✅ Config injected"
+
+# Use node to update the astro config file (most reliable cross-platform)
+node -e "
+const fs = require('fs');
+const path = require('path');
+const configPath = path.join('$OUTPUT_DIR', 'astro.config.mjs');
+let content = fs.readFileSync(configPath, 'utf8');
+content = content.replace(\"site: 'https://example.com'\", \"site: '$SITE_URL'\");
+fs.writeFileSync(configPath, content);
+console.log('✅ Astro config updated with site:', '$SITE_URL');
+"
 
 echo ""
 echo "🎉 Site created at $OUTPUT_DIR"

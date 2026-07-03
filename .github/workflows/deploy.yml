@@ -103,13 +103,19 @@ jobs:
           console.log('Updating astro config...');
           const configPath = path.join(outputDir, 'astro.config.mjs');
           let configContent = fs.readFileSync(configPath, 'utf8');
-          const siteUrl = domain ? 'https://' + domain : 'https://' + name + '.github.io';
-          const basePath = domain ? '/' : '/' + name + '/';
+          
+          // For GitHub Pages: the site is deployed at https://<user>.github.io/<repo-name>/
+          // So base should be /<repo-name>/
+          const repoName = 'doctor-site-factory';
+          const siteUrl = domain ? 'https://' + domain : 'https://chino-tacit.github.io';
+          const basePath = domain ? '/' : '/' + repoName + '/';
           
           // Update site and add base
           configContent = configContent.replace("site: 'https://example.com'", "site: '" + siteUrl + "'");
           if (!configContent.includes('base:')) {
             configContent = configContent.replace("site: '", "base: '" + basePath + "',\n  site: '");
+          } else {
+            configContent = configContent.replace(/base:\s*'[^']*'/, "base: '" + basePath + "'");
           }
           
           fs.writeFileSync(configPath, configContent);

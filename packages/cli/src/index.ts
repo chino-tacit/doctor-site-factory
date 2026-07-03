@@ -17,7 +17,7 @@ program
   .version('1.0.0')
   .requiredOption('-s, --specialty <name>', 'Specialty (dermatology, ophthalmology, etc.)')
   .requiredOption('-n, --name <slug>', 'Site slug (e.g., dr-smith-derm)')
-  .option('-o, --output <dir>', 'Output directory (relative to workspace root)', '../sites')
+  .option('-o, --output <dir>', 'Output directory (relative to workspace root)', 'sites')
   .option('--domain <domain>', 'Custom domain (e.g., drsmithderm.com)')
   .option('--skip-install', 'Skip npm install')
   .option('--clinic-name <name>', 'Clinic name for config')

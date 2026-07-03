@@ -156,37 +156,10 @@ jobs:
 
       - name: Deploy to GitHub Pages
         if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
-        run: |
-          cd sites/${{ github.event.inputs.site-name }}
-          
-          # Create orphan branch for this site
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # Create a temporary directory for the dist files
-          TEMP_DIR=$(mktemp -d)
-          cp -r dist/* "$TEMP_DIR/"
-          
-          # Create orphan branch
-          git checkout --orphan "site-${{ github.event.inputs.site-name }}"
-          
-          # Remove all files from working directory (including hidden)
-          git ls-files -z | xargs -0 rm -rf 2>/dev/null || true
-          find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} + 2>/dev/null || true
-          
-          # Copy dist contents
-          cp -r "$TEMP_DIR"/* .
-          
-          # Add CNAME if exists
-          if [ -f CNAME ]; then
-            echo "Custom domain: $(cat CNAME)"
-          fi
-          
-          git add .
-          git commit -m "Deploy ${{ github.event.inputs.site-name }} to GitHub Pages"
-          git push -f origin "site-${{ github.event.inputs.site-name }}"
-          
-          # Cleanup
-          rm -rf "$TEMP_DIR"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./sites/${{ github.event.inputs.site-name }}/dist
+          publish_branch: site-${{ github.event.inputs.site-name }}
+          force_orphan: true
+          cname: ${{ github.event.inputs.custom-domain }}

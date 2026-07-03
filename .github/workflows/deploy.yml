@@ -35,7 +35,9 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      # No npm ci at root - we don't need factory deps to generate site
+      # Install tsx globally so npx tsx works
+      - name: Install tsx
+        run: npm install -g tsx
 
       - name: Generate site
         run: |
@@ -63,11 +65,12 @@ jobs:
         run: |
           cd sites/${{ github.event.inputs.site-name || 'dr-smith-derm' }}
           
+          
           # Create orphan branch for this site
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          git checkout --orphan "site-${{ github.event.inputs.site-name || 'dr-smith-derm' }}"
+          git checkout --orphan "site-${{ github.event.inputs.site-name || 'dr-smith-derm }}"
           git rm -rf .
           cp -r dist/* .
           

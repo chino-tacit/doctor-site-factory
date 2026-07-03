@@ -38,13 +38,68 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Generate site (bash script)
+      - name: Generate site (Node.js inline)
         run: |
-          chmod +x packages/cli/generate-site.sh
-          ./packages/cli/generate-site.sh \
-            "${{ github.event.inputs.specialty }}" \
-            "${{ github.event.inputs.site-name }}" \
-            "${{ github.event.inputs.custom-domain }}"
+          node -e "
+          const fs = require('fs');
+          const path = require('path');
+          
+          const specialty = '${{ github.event.inputs.specialty }}';
+          const name = '${{ github.event.inputs.site-name }}';
+          const domain = '${{ github.event.inputs.custom-domain }}';
+          
+          const workspaceRoot = process.cwd();
+          const specialtyDir = path.join(workspaceRoot, 'specialties', specialty);
+          const templateDir = path.join(workspaceRoot, 'packages', 'astro-doctor-template');
+          const outputDir = path.join(workspaceRoot, 'sites', name);
+          
+          console.log('DEBUG: workspaceRoot =', workspaceRoot);
+          console.log('DEBUG: specialtyDir =', specialtyDir);
+          console.log('DEBUG: templateDir =', templateDir);
+          console.log('DEBUG: outputDir =', outputDir);
+          
+          // Check directories exist
+          if (!fs.existsSync(specialtyDir)) {
+            console.error('Specialty dir not found:', specialtyDir);
+            fs.readdirSync(path.join(workspaceRoot, 'specialties')).forEach(f => console.log('  Available:', f));
+            process.exit(1);
+          }
+          if (!fs.existsSync(templateDir)) {
+            console.error('Template dir not found:', templateDir);
+            process.exit(1);
+          }
+          
+          // Copy template
+          fs.cpSync(templateDir, outputDir, { recursive: true });
+          console.log('✅ Template copied');
+          
+          // Copy specialty content
+          fs.cpSync(path.join(specialtyDir, 'services'), path.join(outputDir, 'src', 'content', 'services'), { recursive: true });
+          fs.cpSync(path.join(specialtyDir, 'team'), path.join(outputDir, 'src', 'content', 'team'), { recursive: true });
+          fs.cpSync(path.join(specialtyDir, 'assets'), path.join(outputDir, 'public', 'assets'), { recursive: true, force: true });
+          console.log('✅ Specialty content copied');
+          
+          // Inject config
+          fs.mkdirSync(path.join(outputDir, 'src', 'content', 'specialtyConfig'), { recursive: true });
+          fs.cpSync(path.join(specialtyDir, 'config.json'), path.join(outputDir, 'src', 'content', 'specialtyConfig', 'specialtyConfig.json'));
+          console.log('✅ Config copied');
+          
+          // Update astro.config.mjs with site URL
+          const configPath = path.join(outputDir, 'astro.config.mjs');
+          let configContent = fs.readFileSync(configPath, 'utf8');
+          const siteUrl = domain ? 'https://' + domain : 'https://' + name + '.github.io';
+          configContent = configContent.replace(\"site: 'https://example.com'\", \"site: '\" + siteUrl + \"'\");
+          fs.writeFileSync(configPath, configContent);
+          
+          if (domain) {
+            fs.writeFileSync(path.join(outputDir, 'public', 'CNAME'), domain);
+            console.log('✅ CNAME created for', domain);
+          }
+          
+          console.log('✅ Astro config updated with site:', siteUrl);
+          console.log('');
+          console.log('🎉 Site created at', outputDir);
+          "
         working-directory: .
 
       - name: Verify site generated

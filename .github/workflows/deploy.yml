@@ -108,7 +108,12 @@ jobs:
           const configPath = path.join(outputDir, 'astro.config.mjs');
           let configContent = fs.readFileSync(configPath, 'utf8');
           const siteUrl = domain ? 'https://' + domain : 'https://' + name + '.github.io';
+          const basePath = domain ? '/' : '/' + name + '/';
           configContent = configContent.replace(\"site: 'https://example.com'\", \"site: '\" + siteUrl + \"'\");
+          // Add base path for GitHub Pages subdirectory deployment
+          if (!configContent.includes('base:')) {
+            configContent = configContent.replace(\"site: '\", \"base: '\" + basePath + \"',\\n  site: '\");
+          }
           fs.writeFileSync(configPath, configContent);
           
           if (domain) {
@@ -117,6 +122,7 @@ jobs:
           }
           
           console.log('✅ Astro config updated with site:', siteUrl);
+          console.log('✅ Astro config updated with base:', basePath);
           console.log('');
           console.log('🎉 Site created at', outputDir);
           "
